@@ -188,18 +188,33 @@ alarms_this_week <- week_summary |>
 
 # Save plots
 
+if (!dir.exists("outputs/plots")) {
+  dir.create("outputs/plots")
+}
+
 for (i in 1:length(plot_list)) {
 
-  ggsave(plot_list_faceted[[i]], filename = glue("outputs/plots/FF_plot_{names(plot_list_faceted[i])}.png"), width = 12, height = 6)
+  ggsave(
+    plot_list_faceted[[i]],
+    filename = glue("outputs/plots/FF_plot_{names(plot_list_faceted[i])}.png"),
+    width = 12,
+    height = 6
+  )
 
 }
 
 
 # Save summary of pathogens/hb combos above alarm threshold for this week
+if (!dir.exists("outputs/tables")) {
+  dir.create("outputs/tables")
+}
 
 write_csv(alarms_this_week, file = glue("outputs/tables/Alarm_pathogens_{today()}.csv"))
 
 
 # Save objects for report
+if (!dir.exists("data")) {
+  dir.create("data")
+}
 
 save.image("data/model_data.rds")
