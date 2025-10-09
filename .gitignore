@@ -28,3 +28,7 @@ _extensions/
 # R data files #
 *.[rR][dD][aA][tT][aA]
 *.[rR][dD][sS]
+
+# .html output files #
+*.[hH][tT][mM][lL]
+
