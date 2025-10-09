@@ -12,6 +12,9 @@ data/
 # 'outputs' folder
 outputs/
 
+# '_extension' folder
+_extension/
+
 # Common text files that may contain data #
 *.[cC][sS][vV]
 *.[tT][xX][tT]

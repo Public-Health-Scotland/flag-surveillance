@@ -1,4 +1,4 @@
-#'
+
 #' Title: Aberration detection model of ECOSS respiratory pathogens
 #' Author: Matthew Hoyle
 #' Date: 01/04/2025
@@ -16,7 +16,7 @@
 
 source("/PHI_conf/Respiratory_Surveillance_General/Matthew_Hoyle/get_ecoss_data.R")
 
-#load("Data/model_data.rds")
+#load("data/model_data.rds")
 
 # Keep only Aggregated data objects
 
