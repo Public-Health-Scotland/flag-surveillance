@@ -13,7 +13,7 @@ data/
 outputs/
 
 # '_extension' folder
-_extensions/
+#_extensions/
 
 # Common text files that may contain data #
 *.[cC][sS][vV]
@@ -32,3 +32,5 @@ _extensions/
 # .html output files #
 *.[hH][tT][mM][lL]
 
+
+/.quarto/

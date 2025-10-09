@@ -218,3 +218,11 @@ if (!dir.exists("data")) {
 }
 
 save.image("data/model_data.rds")
+
+
+
+# Render weekly report ----------------------------------------------------
+
+quarto::quarto_render()
+
+

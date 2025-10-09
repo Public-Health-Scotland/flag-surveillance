@@ -1,0 +1,159 @@
+---
+title: "ECOSS Surveillance Tool (EST)"
+subtitle: "Week `r lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = 'week', week_start = 1)-7)` summary report" 
+author: "Matthew Hoyle"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+
+css: _extensions/phs-html-quarto/phs_style.css
+
+embed-resources: true
+
+format: 
+  html:
+    toc: true
+    toc_float: true
+  pdf: default
+
+editor: visual
+
+title-block-banner: "#3F3685"
+title-block-style: manuscript
+
+execute: 
+  echo: false
+  warning: false
+  #freeze: true
+  
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here)
+
+
+load(here::here("data/model_data.rds"))
+
+
+# Set Theme
+old <- theme_set(theme_bw())
+
+
+report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = "week", week_start = 1)-7)
+```
+
+## Overview
+
+This report details the weekly results from an aberration detection model using the Farrington flexible [@farrington1996] methodology with adaptations outlined by @noufaily2012 from the `{surveillance}` package in R [@salmon2016]. The model takes weekly time-series count data from ECOSS, aggregated by NHS health board, and fits an overdispersed Poisson generalised linear model (GLM) with log link for each time point to predict an upper bound (or *“alarm threshold”*). If observed weekly counts surpass the predicted upper bound, then an *alarm* is raised then and flagged in the outputs. The model also includes a population offset for each NHS health board and accounts for seasonality.
+
+### Parameter settings
+
+-   range = current season
+
+    -   Specifies the index of all timepoints which should be tested. If range is `NULL` all possible timepoints are used.
+
+-   noPeriods = 10
+
+    -   Number of levels in the factor allowing to use more baseline. If equal to 1 no factor variable is created, the set of reference values is defined as in Farrington et al (1996).
+
+-   populationOffset = True
+
+    -   Boolean specifying whether to include a population offset in the GLM. The slot `sts@population` gives the population vector.
+
+-   b = 2
+
+    -   How many years back in time to include when forming the base counts.
+
+-   w = 3
+
+    -   Window's half-size, i.e. number of weeks to include before and after the current week in each year.
+
+-   weightsThreshold = 2.58
+
+    -   Defines the threshold for reweighting past outbreaks using the Anscombe residuals (1 in the original method, 2.58 advised in the improved method).
+
+-   pastWeeksNotIncluded = 2
+
+    -   Number of past weeks to ignore in the calculation. The default (`NULL`) means to use the value of `control$w`. Setting `pastWeeksNotIncluded=26` might be preferable [@noufaily2012].
+
+-   pThresholdTrend = 1,
+
+    -   Threshold for deciding whether to keep trend in the model (0.05 in the original method, 1 advised in the improved method).
+
+-   thresholdMethod = "nbPlugin",
+
+    -   Method to be used to derive the upperbound. Options are `"delta"` for the method described in [@farrington1996], `"nbPlugin"` for the method described in @noufaily2012, and `"muan"` for the method extended from @noufaily2012.
+
+-   alpha = 0.05,
+
+    -   An approximate (one-sided) $(1−α)⋅100\%(1−α)⋅100\%$ prediction interval is calculated unlike the original method where it was a two-sided interval. The upper limit of this interval i.e. the $(1−α)⋅100\%(1−α)⋅100\%$ quantile serves as an upper-bound.
+
+-   limit54 = c(5, 4)
+
+    -   Vector containing two numbers: `cases` and `period`. To avoid alarms in cases where the time series only has about almost no cases in the specific week the algorithm uses the following heuristic criterion (see Section 3.8 of the Farrington paper) to protect against low counts: no alarm is sounded if fewer than cases=5cases=5 reports were received in the past period=4period=4 weeks. `limit54=c(cases,period)` is a vector allowing the user to change these numbers. Note: As of version 0.9-7 of the package the term "last" period of weeks includes the current week - otherwise no alarm is sounded for horrible large numbers if the four weeks before that are too low.
+
+## Model Outputs
+
+### Alarms Raised
+
+```{r alarms_stats}
+hb_with_outbreaks <- alarms_this_week |> 
+  filter(unit != "overall") |> 
+  pull(unit) |> 
+  unique()
+```
+
+In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`.
+
+```{r alarms_table}
+alarms_this_week |> 
+  select(organism, unit, observed, expected, upperbound, rate) |> 
+  gt(groupname_col = "unit", row_group_as_column = TRUE) |> 
+  cols_label(organism = "ECOSS Pathogen",
+             observed = "Observed",
+             upperbound = "Alarm Threshold",
+             rate = "Rate*") |> 
+  tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+  tab_options(row_group.default_label = "Health Board")
+```
+
+### Scotland
+
+```{r national plots}
+#| results: asis
+national_plots <- plot_list |> 
+  map(\(x) 
+      keep_at(x, "overall")) |> 
+  list_flatten()
+
+tibble(
+  organism = pathogens,
+  plots = c(national_plots)
+) |> 
+  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+
+```
+
+### Health Boards
+
+```{r hb plots}
+#| results: asis
+
+
+tibble(
+  organism = pathogens,
+  plots = c(
+    plot_list_faceted |>
+      map(\(x) 
+          x + labs(title = NULL,
+       subtitle = NULL)
+       )
+    )
+  ) |> 
+  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+
+```
+
+------------------------------------------------------------------------
+
+![](_extensions/phs-html-quarto/phs-logo.png){.column-margin fig-align="right"}
