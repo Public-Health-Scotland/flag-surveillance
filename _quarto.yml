@@ -1,5 +1,23 @@
 project:
-  title: "ecoss-surveillance"
+  type: website
   output-dir: outputs
+
+website:
+  title: "ecoss-surveillance"
+  navbar:
+    background: "#3F3685"
+    left:
+      # - href: index.qmd
+      #   text: Home
+      - about.qmd
+      - href: est_weekly_report.qmd
+        text: Report
+
+format:
+  html:
+    css: _extensions/phs-html-quarto/phs_style.css
+    toc: true
+
+bibliography: references.bib
 
 editor: visual
