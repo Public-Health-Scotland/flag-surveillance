@@ -192,16 +192,37 @@ if (!dir.exists("outputs/plots")) {
   dir.create("outputs/plots")
 }
 
-for (i in 1:length(plot_list)) {
+for (i in 1:length(plot_list_faceted)) {
 
   ggsave(
     plot_list_faceted[[i]],
     filename = glue("outputs/plots/FF_plot_{names(plot_list_faceted[i])}.png"),
     width = 12,
-    height = 6
+    height = 8
   )
 
 }
+
+
+# plot_list |>
+#   imap(\(x, idx){
+#     x |>
+#       imap(\(y, idy){
+#
+#         # Add title to plots
+#         plot <- y +
+#           labs(title = idx,
+#                subtitle = idy)
+#
+#         # Save out plots
+#         ggsave(
+#           plot,
+#           filename = glue("outputs/plots/FF_plot_{idx}_{idy}.png"),
+#           width = 12,
+#           height = 6
+#         )
+#       })
+#   })
 
 
 # Save summary of pathogens/hb combos above alarm threshold for this week
@@ -224,5 +245,3 @@ save.image("data/model_data.rds")
 # Render weekly report ----------------------------------------------------
 
 quarto::quarto_render()
-
-
