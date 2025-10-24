@@ -25,7 +25,8 @@ rm(list=setdiff(ls(), c("Aggregate_Scot", "Aggregate_HB", "Aggregate_AgeGp")))
 
 # Packages ----------------------------------------------------------------
 
-pacman::p_load(tidyverse, lubridate, ISOweek, surveillance, purrr, janitor, glue, gt)
+pacman::p_load(tidyverse, lubridate, ISOweek, surveillance, purrr, janitor,
+               glue, gt, grates)
 
 source("R/functions.R")
 
@@ -48,9 +49,7 @@ hb_data <- Aggregate_HB |>
                           "Parainfluenza Type 3",
                           "Parainfluenza Type 4")) |>
   rename(iso_week = is_oweek) |>
-  mutate(week_date = case_when(iso_week < 10 ~ paste0(year, "-W0", iso_week, "-", 1, sep = ""),
-                               TRUE ~ paste0(year, "-W", iso_week, "-", 1, sep = "")),
-         week_date = ISOweek::ISOweek2date(week_date)) |>
+  mutate(week_date = grates::isoweek(year = year, week = iso_week)) |>
   arrange(week_date)
 
 
@@ -180,8 +179,12 @@ alarms_this_week <- week_summary |>
   list_rbind(names_to = "organism") |>
   mutate(rate = round_half_up(observed/population * 100000, 2))
 
-
-
+historic_alarms <- output_list |>
+  bind_rows(.id = "organism") |>
+  filter(alarm == TRUE) |>
+  mutate(week_date = grates::as_isoweek(week_date),
+         rate = round_half_up(observed/population * 100000, 2)) |>
+  arrange(week_date)
 
 
 # Save Data ---------------------------------------------------------------
@@ -231,6 +234,9 @@ if (!dir.exists("outputs/tables")) {
 }
 
 write_csv(alarms_this_week, file = glue("outputs/tables/Alarm_pathogens_{today()}.csv"))
+
+write_csv(historic_alarms, file = glue("outputs/tables/historic_alarms.csv"))
+
 
 
 # Save objects for report

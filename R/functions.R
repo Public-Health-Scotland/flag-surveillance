@@ -13,10 +13,7 @@ hb_sts <- function(pathogen, data){
 
   # filter the chosen disease
   pathogen_data <- data |>
-    filter(organism == pathogen
-           #,
-           #iso_week != 53
-    )
+    filter(organism == pathogen)
 
   # Create matrix of counts by hb
   count_matrix <- pathogen_data |>
