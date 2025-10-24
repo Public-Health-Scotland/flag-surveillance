@@ -102,6 +102,19 @@ tibble(
 
 ```
 
+## Weekly alarms by health board
+
+```{r}
+historic_alarms |> 
+  group_by(week_date, unit) |> 
+  count() |> 
+  ggplot(aes(x = week_date, y = n, fill = unit)) +
+  geom_col() +
+  labs(x = "ISO Week",
+       y = "Count",
+       fill = "Health Board")
+```
+
 ------------------------------------------------------------------------
 
 ![](_extensions/phs-html-quarto/phs-logo.png){.column-margin fig-align="right"}
