@@ -9,10 +9,13 @@
 # 'data' folder #
 data/
 
-# 'outputs' folder
+# 'outputs' folder #
 outputs/
 
-# '_extension' folder
+# 'report' folder #
+report/
+
+# '_extension' folder #
 #_extensions/
 
 # Common text files that may contain data #

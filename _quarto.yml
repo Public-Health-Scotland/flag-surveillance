@@ -1,6 +1,6 @@
 project:
   type: website
-  output-dir: outputs
+  output-dir: report
 
 website:
   title: "ecoss-surveillance"
