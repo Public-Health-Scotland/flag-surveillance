@@ -25,7 +25,7 @@ execute:
 
 ```{r setup, include=FALSE}
 
-pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here)
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, grates)
 
 
 load(here::here("data/model_data.rds"))
