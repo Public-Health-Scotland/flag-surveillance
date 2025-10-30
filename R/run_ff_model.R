@@ -49,7 +49,7 @@ hb_data <- Aggregate_HB |>
                           "Parainfluenza Type 3",
                           "Parainfluenza Type 4")) |>
   rename(iso_week = is_oweek) |>
-  mutate(week_date = grates::isoweek(year = year, week = iso_week)) |>
+  mutate(week_date = as_date(grates::isoweek(year = year, week = iso_week))) |>
   arrange(week_date)
 
 
