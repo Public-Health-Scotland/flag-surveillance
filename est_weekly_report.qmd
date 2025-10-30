@@ -106,6 +106,7 @@ tibble(
 
 ```{r}
 historic_alarms |> 
+  mutate(unit = factor(unit, levels = hb_vec)) |> 
   group_by(week_date, unit) |> 
   count() |> 
   ggplot(aes(x = week_date, y = n, fill = unit)) +
