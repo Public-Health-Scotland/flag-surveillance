@@ -39,3 +39,6 @@ report/
 /.quarto/
 
 **/*.quarto_ipynb
+
+# All folders ending in '_files' (sometimes created when running quarto::quarto_render())
+*_files
