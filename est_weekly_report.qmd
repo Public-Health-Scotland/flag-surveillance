@@ -30,6 +30,8 @@ pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, grat
 
 load(here::here("data/model_data.rds"))
 
+hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
+
 
 # Set Theme
 old <- theme_set(theme_bw())
@@ -53,14 +55,19 @@ In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out
 
 ```{r alarms_table}
 alarms_this_week |> 
-  select(organism, unit, observed, expected, upperbound, rate) |> 
-  gt(groupname_col = "unit", row_group_as_column = TRUE) |> 
+  left_join(hb_names, join_by(unit == health_board)) |> 
+  mutate(unit = factor(unit, levels = hb_vec)) |>
+  arrange(unit) |> 
+  select(hb2019name, organism, observed, expected, upperbound, rate) |> 
+  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |> 
   cols_label(organism = "ECOSS Pathogen",
              observed = "Observed",
+             expected = "Expected"
              upperbound = "Alarm Threshold",
              rate = "Rate*") |> 
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
-  tab_options(row_group.default_label = "Health Board")
+  tab_options(row_group.default_label = "Health Board") |> 
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
 ```
 
 ### Scotland
