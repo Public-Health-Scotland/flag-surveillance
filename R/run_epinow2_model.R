@@ -39,6 +39,7 @@ flu_incidence <- all_episodes |>
   clean_names() |>
   rename(iso_week = is_oweek) |>
   filter(organism == "Influenza",
+         type == "Type A",
          flu_season %in% plot_seasons) |>
   incidence_(
     date_index = specimen_date,
@@ -124,7 +125,6 @@ estimates <- EpiNow2::epinow(
   data = flu_incidence,
   generation_time = EpiNow2::generation_time_opts(dat_incubationtime_epinow),
   delays = EpiNow2::delay_opts(dat_reportdelay + dat_incubationtime_epinow),
-  #<COMPLETE>
   stan = EpiNow2::stan_opts(samples = 1000, chains = 3)
 )
 
@@ -133,3 +133,8 @@ estimates <- EpiNow2::epinow(
 summary(estimates)
 plot(estimates)
 
+
+
+# Save estimates ----------------------------------------------------------
+
+saveRDS(estimates, "data/estimates.rds")
