@@ -46,13 +46,12 @@ flu_incidence <- all_episodes |>
     complete_dates = TRUE,
     count_values_to = "confirm",
     date_names_to = "date"
-  ) #|>
-  #slice_head(n=90)
+  ) |>
+  slice_head(n=90)
 
 
 plot(flu_incidence)
 
-#
 
 # Define a generation time from {epiparameter} to {EpiNow2} ---------------
 
