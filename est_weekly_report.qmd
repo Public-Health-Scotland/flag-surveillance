@@ -10,7 +10,7 @@ format:
   html:
     toc: true
     toc_float: true
-  pdf: default
+  #pdf: default
 
 editor: visual
 
