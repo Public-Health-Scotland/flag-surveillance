@@ -22,6 +22,8 @@ source("/PHI_conf/Respiratory_Surveillance_General/Matthew_Hoyle/get_ecoss_data.
 
 rm(list=setdiff(ls(), c("Aggregate_Scot", "Aggregate_HB", "Aggregate_AgeGp")))
 
+hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
+
 
 # Packages ----------------------------------------------------------------
 
@@ -177,6 +179,9 @@ alarms_this_week <- week_summary |>
         filter(alarm == TRUE)
   ) |>
   list_rbind(names_to = "organism") |>
+  left_join(hb_names, join_by(unit == health_board)) |>
+  mutate(unit = factor(unit, levels = hb_vec)) |>
+  arrange(unit) |>
   mutate(rate = round_half_up(observed/population * 100000, 2))
 
 historic_alarms <- output_list |>

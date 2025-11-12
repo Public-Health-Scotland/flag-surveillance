@@ -30,8 +30,6 @@ pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, grat
 
 load(here::here("data/model_data.rds"))
 
-hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
-
 
 # Set Theme
 old <- theme_set(theme_bw())
@@ -54,15 +52,12 @@ hb_with_outbreaks <- alarms_this_week |>
 In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`.
 
 ```{r alarms_table}
-alarms_this_week |> 
-  left_join(hb_names, join_by(unit == health_board)) |> 
-  mutate(unit = factor(unit, levels = hb_vec)) |>
-  arrange(unit) |> 
+alarms_this_week |>
   select(hb2019name, organism, observed, expected, upperbound, rate) |> 
   gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |> 
   cols_label(organism = "ECOSS Pathogen",
              observed = "Observed",
-             expected = "Expected"
+             expected = "Expected",
              upperbound = "Alarm Threshold",
              rate = "Rate*") |> 
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
