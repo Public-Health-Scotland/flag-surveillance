@@ -35,6 +35,9 @@ report/
 # .html output files #
 *.[hH][tT][mM][lL]
 
+# .parquet files
+*.[pP][aA][rR][qQ][uU][eE][tT]
+
 
 /.quarto/
 
