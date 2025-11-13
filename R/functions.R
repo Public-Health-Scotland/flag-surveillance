@@ -238,7 +238,3 @@ gg_outbreak_facet <- function(tidy_output, plot_name = NULL){
 
   return(plot)
 }
-
-
-
-
