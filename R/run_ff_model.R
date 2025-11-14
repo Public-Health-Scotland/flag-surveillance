@@ -14,15 +14,6 @@
 
 # Load Data ---------------------------------------------------------------
 
-source("/PHI_conf/Respiratory_Surveillance_General/Matthew_Hoyle/get_ecoss_data.R")
-
-#load("here::here(data/model_data.rds"))
-
-
-# Keep only Aggregated data objects
-
-rm(list=setdiff(ls(), c("Aggregate_Scot", "Aggregate_HB", "Aggregate_AgeGp")))
-
 hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
 
 
