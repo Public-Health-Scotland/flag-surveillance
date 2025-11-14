@@ -7,6 +7,14 @@
 #' flexible aberration detection model and renders an interactive report using
 #' quarto.
 
+# Load Data ---------------------------------------------------------------
+
+source("/PHI_conf/Respiratory_Surveillance_General/Matthew_Hoyle/get_ecoss_data.R")
+
+# Keep only Aggregated data objects
+
+rm(list=setdiff(ls(), c("Aggregate_Scot", "Aggregate_HB", "Aggregate_AgeGp")))
+
 
 # Load functions ----------------------------------------------------------
 
@@ -15,12 +23,12 @@ source(here::here("R/functions.R"))
 
 # Run model ---------------------------------------------------------------
 
-source(here::here("R/run_FF_model.R"))
+source(here::here("R/run_ff_model.R"))
 
 
 # Create plots ------------------------------------------------------------
 
-source(here::here("R/create_plots.R"))
+source(here::here("R/create_outputs.R"))
 
 
 # Save objects for quarto report ------------------------------------------
