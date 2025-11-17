@@ -4,7 +4,7 @@ subtitle: "Week `r lubridate::isoweek(lubridate::floor_date(lubridate::today(), 
 author: "Matthew Hoyle"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 
-#embed-resources: true
+embed-resources: true
 
 format: 
   html:
@@ -20,7 +20,7 @@ title-block-style: manuscript
 execute: 
   echo: false
   warning: false
-  #freeze: true
+  freeze: true
 ---
 
 ```{r setup, include=FALSE}
@@ -110,26 +110,26 @@ tibble(
 ```{r interactive national plots}
 #| results: asis
 
-national_iplots <- iplot_list |>
-  map(\(x)
-      keep_at(x, "overall")) |>
-  list_flatten() |>
-  map(\(x)
-      ggiraph::girafe(ggobj = x,
-                options = list(
-                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-                  opts_sizing(width = .8),
-                  opts_hover(css = ''),
-                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-                  )
-                )
-      )
-
-tibble(
-  organism = pathogens,
-  plots = c(national_iplots)
-) |>
-  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+# national_iplots <- iplot_list |>
+#   map(\(x)
+#       keep_at(x, "overall")) |>
+#   list_flatten() |>
+#   map(\(x)
+#       ggiraph::girafe(ggobj = x,
+#                 options = list(
+#                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+#                   opts_sizing(width = .8),
+#                   opts_hover(css = ''),
+#                   opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+#                   )
+#                 )
+#       )
+# 
+# tibble(
+#   organism = pathogens,
+#   plots = c(national_iplots)
+# ) |>
+#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
 ```
 
 ## Weekly alarms by health board
