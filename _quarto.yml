@@ -3,13 +3,14 @@ project:
   output-dir: report
 
 website:
-  title: "ecoss-surveillance"
+  title: "FLAG surveillance"
+  favicon: "🚩"
   navbar:
     background: "#3F3685"
+    logo: "🚩"
     left:
-      # - href: index.qmd
-      #   text: Home
-      - about.qmd
+      - href: about.qmd
+        text: About
       - href: est_weekly_report.qmd
         text: Report
 
