@@ -1,0 +1,123 @@
+---
+title: "ECOSS Surveillance Tool (EST)"
+subtitle: "Week `r lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = 'week', week_start = 1)-7)` summary report" 
+author: "Matthew Hoyle"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+
+embed-resources: true
+
+format: 
+  html:
+    toc: true
+    toc_float: true
+  #pdf: default
+
+editor: visual
+
+title-block-banner: "#3F3685"
+title-block-style: manuscript
+
+execute: 
+  echo: false
+  warning: false
+  #freeze: true
+---
+
+```{r setup, include=FALSE}
+
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, grates)
+
+
+load(here::here("data/GP_model_data.rds"))
+
+
+# Set Theme
+old <- theme_set(theme_bw())
+
+
+report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = "week", week_start = 1)-7)
+```
+
+## Model Outputs
+
+### Alarms Raised
+
+```{r alarms_stats}
+hb_with_GP_outbreaks <- GP_alarms_this_week |> 
+  filter(unit != "overall") |> 
+  pull(unit) |> 
+  unique()
+```
+
+In week `r report_week`, alarms were raised in `r length(hb_with_GP_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_GP_outbreaks)`.
+
+```{r alarms_table}
+GP_alarms_this_week |>
+  select(hb2019name, consultation_type, observed, expected, upperbound, rate) |> 
+  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |> 
+  cols_label(organism = "Consultation Type",
+             observed = "Observed",
+             expected = "Expected",
+             upperbound = "Alarm Threshold",
+             rate = "Rate*") |> 
+  tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+  tab_options(row_group.default_label = "Health Board") |> 
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
+```
+
+### Scotland
+
+```{r national plots}
+#| results: asis
+GP_national_plots <- GP_plot_list |> 
+  map(\(x) 
+      keep_at(x, "overall")) |> 
+  list_flatten()
+
+tibble(
+  consultation_type = consultations,
+  plots = c(GP_national_plots)
+) |> 
+  quartabs::render_tabset(tabset_vars = consultation_type, output_vars = plots, pills = TRUE)
+
+```
+
+### Health Boards
+
+```{r hb plots}
+#| results: asis
+#| fig-width: 12
+#| fig-height: 8
+
+
+tibble(
+  consultation_type = consultations,
+  plots = c(
+    GP_plot_list_faceted |>
+      map(\(x) 
+          x + labs(title = NULL,
+       subtitle = NULL)
+       )
+    )
+  ) |> 
+  quartabs::render_tabset(tabset_vars = consultation_type, output_vars = plots, pills = TRUE)
+
+```
+
+## Weekly alarms by health board
+
+```{r}
+GP_historic_alarms |> 
+  mutate(unit = factor(unit, levels = GP_hb_vec)) |> 
+  group_by(week_date, unit) |> 
+  count() |> 
+  ggplot(aes(x = week_date, y = n, fill = unit)) +
+  geom_col() +
+  labs(x = "ISO Week",
+       y = "Count",
+       fill = "Health Board")
+```
+
+------------------------------------------------------------------------
+
+![](_extensions/phs-html-quarto/phs-logo.png){.column-margin fig-align="right"}
