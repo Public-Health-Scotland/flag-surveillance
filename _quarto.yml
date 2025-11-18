@@ -3,11 +3,9 @@ project:
   output-dir: report
 
 website:
-  title: "FLAG surveillance"
-  favicon: "🚩"
+  title: "🚩 FLAG surveillance"
   navbar:
     background: "#3F3685"
-    logo: "🚩"
     left:
       - href: about.qmd
         text: About
