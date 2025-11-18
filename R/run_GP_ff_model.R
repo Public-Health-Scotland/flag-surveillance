@@ -1,5 +1,5 @@
 # Set-up ------------------------------------------------------------------
-#
+library(quarto)
 
 source("R/Read_in_tidy_GP_data.R")
 source("R/GP_functions.R")
@@ -175,13 +175,13 @@ if (!dir.exists("data")) {
   dir.create("data")
 }
 
+rm(all_ILI_ARI_data, Date_Reference)
+
 save.image("data/GP_model_data.rds")
 
 # Render weekly report ----------------------------------------------------
 
-quarto::quarto_render()
-
-
+quarto_render("Flag_GP_weekly_report.qmd")
 
 
 #To-do:
