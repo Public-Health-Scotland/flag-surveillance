@@ -31,4 +31,5 @@ report/
 **/*.quarto_ipynb
 # All folders ending in '_files' (sometimes created when running quarto::quarto_render())
 *_files
-Flag_GP_weekly_report-copy.qmd
+# All folders ending in '_freeze' (sometimes created when running quarto::quarto_render())
+*_freeze
