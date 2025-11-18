@@ -53,16 +53,23 @@ In week `r report_week`, alarms were raised in `r length(hb_with_GP_outbreaks)` 
 
 ```{r alarms_table}
 GP_alarms_this_week |>
-  select(hb2019name, consultation_type, observed, expected, upperbound, rate) |> 
-  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |> 
-  cols_label(organism = "Consultation Type",
-             observed = "Observed",
-             expected = "Expected",
-             upperbound = "Alarm Threshold",
-             rate = "Rate*") |> 
-  tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
-  tab_options(row_group.default_label = "Health Board") |> 
-  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
+  select(unit, consultation_type, observed, expected, upperbound, rate) |>
+  gt(groupname_col = "unit", row_group_as_column = TRUE) |>
+  cols_label(
+    consultation_type = "Consultation Type",
+    observed = "Observed",
+    expected = "Expected",
+    upperbound = "Alarm Threshold",
+    rate = "Rate*"
+  ) |>
+tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+  tab_options(row_group.default_label = "Health Board") |>
+  opt_interactive(
+    use_search = TRUE,
+    use_highlight = TRUE,
+    use_compact_mode = TRUE,
+    use_pagination = FALSE
+  )
 ```
 
 ### Scotland
