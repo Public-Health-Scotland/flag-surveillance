@@ -17,8 +17,6 @@ pacman::p_load(tidyverse, ggplot2, ggiraph, glue, lubridate)
 
 old <- theme_set(theme_bw(base_family = "Arial"))
 
-tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
-
 
 # Create static plots ------------------------------------------------------------
 
@@ -39,16 +37,6 @@ plot_list_faceted <- map2(output_list, names(output_list), gg_outbreak_facet)
 # Create Interactive plots ------------------------------------------------
 
 iplot_list <- map(output_list, \(x) map(hb_vec, ggiraph_outbreak, tidy_output = x))
-
-
-ggiraph::girafe(ggobj = iplot_list$Adenovirus$overall,
-                options = list(
-                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-                  opts_sizing(width = .8),
-                  opts_hover(css = ''),
-                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-                )
-)
 
 
 # Summary Table -----------------------------------------------------------

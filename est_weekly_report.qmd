@@ -25,7 +25,7 @@ execute:
 
 ```{r setup, include=FALSE}
 
-pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, 
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, arrow
                grates, ggiraph)
 
 
@@ -109,6 +109,9 @@ tibble(
 
 ```{r interactive national plots}
 #| results: asis
+
+tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
+
 
 # national_iplots <- iplot_list |>
 #   map(\(x)
