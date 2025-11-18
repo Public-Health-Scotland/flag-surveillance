@@ -12,6 +12,8 @@ website:
       - about.qmd
       - href: est_weekly_report.qmd
         text: Report
+      - href: Flag_GP_weekly_report.qmd
+        text: GP Consultations
 
 format:
   html:
