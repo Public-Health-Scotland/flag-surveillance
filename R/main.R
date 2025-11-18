@@ -37,6 +37,14 @@ if (!dir.exists(here::here("data"))) {
   dir.create(here::here("data"))
 }
 
+# Only keep Objects used in the report
+
+rm(list=setdiff(ls(),
+                c("alarm_weeks", "alarms_this_week", "hb_names", "hb_vec", "pathogens", "hb_pc.noufaily",
+                  "scot_pc.noufaily", "historic_alarms", "iplot_list", "output_list",
+                  "plot_list", "plot_list_faceted")))
+
+
 save.image(here::here("data/model_data.rds"))
 
 

@@ -25,7 +25,7 @@ execute:
 
 ```{r setup, include=FALSE}
 
-pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, arrow
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, arrow,
                grates, ggiraph)
 
 
@@ -37,6 +37,12 @@ old <- theme_set(theme_bw(base_family = "Arial"))
 
 
 report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = "week", week_start = 1)-7)
+
+pathogens <- names(plot_list) |> 
+  set_names()
+
+hb_vec <- names(plot_list$Adenovirus) |> 
+  set_names()
 ```
 
 ## Model Outputs
@@ -113,26 +119,35 @@ tibble(
 tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
 
 
-# national_iplots <- iplot_list |>
-#   map(\(x)
-#       keep_at(x, "overall")) |>
-#   list_flatten() |>
-#   map(\(x)
-#       ggiraph::girafe(ggobj = x,
+national_iplots <- iplot_list |>
+  map(\(x)
+      keep_at(x, "overall")) |>
+  list_flatten() |> 
+  map(\(x)
+      ggiraph::girafe(ggobj = x,
+                options = list(
+                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+                  opts_sizing(width = .8),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+                  )
+                )
+      )
+
+tibble(
+  organism = pathogens,
+  plots = c(national_iplots)
+) |>
+  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+
+# ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
 #                 options = list(
 #                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-#                   opts_sizing(width = .8),
+#                   opts_sizing(width = 1),
 #                   opts_hover(css = ''),
 #                   opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-#                   )
 #                 )
-#       )
-# 
-# tibble(
-#   organism = pathogens,
-#   plots = c(national_iplots)
-# ) |>
-#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+# )
 ```
 
 ## Weekly alarms by health board
