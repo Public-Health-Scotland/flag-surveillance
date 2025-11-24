@@ -1,6 +1,6 @@
 ---
-title: "ECOSS Surveillance Tool (EST)"
-subtitle: "Week `r lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = 'week', week_start = 1)-7)` summary report" 
+title: "ECOSS summary report"
+subtitle: "Week `r lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = 'week', week_start = 1)-7)`" 
 author: "Matthew Hoyle"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 
@@ -38,11 +38,11 @@ old <- theme_set(theme_bw(base_family = "Arial"))
 
 report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = "week", week_start = 1)-7)
 
-pathogens <- names(plot_list) |> 
-  set_names()
-
-hb_vec <- names(plot_list$Adenovirus) |> 
-  set_names()
+# pathogens <- names(plot_list) |> 
+#   set_names()
+# 
+# hb_vec <- names(plot_list$Adenovirus) |> 
+#   set_names()
 ```
 
 ## Model Outputs
@@ -54,9 +54,14 @@ hb_with_outbreaks <- alarms_this_week |>
   filter(unit != "overall") |> 
   pull(unit) |> 
   unique()
+
+national_outbreaks <-  alarms_this_week |> 
+  filter(unit == "overall") |> 
+  pull(organism) |> 
+  unique()
 ```
 
-In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`.
+In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`. At the national level, `r length(national_outbreaks)` respiratory pathogens on ECOSS were above the alarm threshold: `r knitr::combine_words(national_outbreaks)`.
 
 ```{r alarms_table}
 alarms_this_week |>
@@ -76,16 +81,16 @@ alarms_this_week |>
 
 ```{r national plots}
 #| results: asis
-national_plots <- plot_list |> 
-  map(\(x) 
-      keep_at(x, "overall")) |> 
-  list_flatten()
-
-tibble(
-  organism = pathogens,
-  plots = c(national_plots)
-) |> 
-  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+# national_plots <- plot_list |> 
+#   map(\(x) 
+#       keep_at(x, "overall")) |> 
+#   list_flatten()
+# 
+# tibble(
+#   organism = pathogens,
+#   plots = c(national_plots)
+# ) |> 
+#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
 
 ```
 
@@ -97,17 +102,17 @@ tibble(
 #| fig-height: 8
 
 
-tibble(
-  organism = pathogens,
-  plots = c(
-    plot_list_faceted |>
-      map(\(x) 
-          x + labs(title = NULL,
-       subtitle = NULL)
-       )
-    )
-  ) |> 
-  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+# tibble(
+#   organism = pathogens,
+#   plots = c(
+#     plot_list_faceted |>
+#       map(\(x) 
+#           x + labs(title = NULL,
+#        subtitle = NULL)
+#        )
+#     )
+#   ) |> 
+#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
 
 ```
 
@@ -122,32 +127,32 @@ tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5
 national_iplots <- iplot_list |>
   map(\(x)
       keep_at(x, "overall")) |>
-  list_flatten() |> 
-  map(\(x)
-      ggiraph::girafe(ggobj = x,
-                options = list(
-                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-                  opts_sizing(width = .8),
-                  opts_hover(css = ''),
-                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-                  )
-                )
-      )
+  list_flatten()
 
 tibble(
   organism = pathogens,
-  plots = c(national_iplots)
-) |>
+  plots = national_iplots  |> 
+      map(\(x)
+          ggiraph::girafe(ggobj = x,
+                          options = list(
+                            opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+                            opts_sizing(width = .8),
+                            opts_hover(css = ''),
+                            opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+                          )
+          )
+      )
+  ) |>
   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
 
-# ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
-#                 options = list(
-#                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-#                   opts_sizing(width = 1),
-#                   opts_hover(css = ''),
-#                   opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-#                 )
-# )
+ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
+                options = list(
+                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+                  opts_sizing(width = 1),
+                  opts_hover(css = ''),
+                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+                )
+)
 ```
 
 ## Weekly alarms by health board
