@@ -5,6 +5,7 @@ project:
 website:
   title: "🚩 FLAG surveillance"
   navbar:
+    logo: _extensions/phs-html-quarto/phs-logo.png
     background: "#3F3685"
     left:
       - href: about.qmd
