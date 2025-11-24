@@ -51,3 +51,5 @@ save.image(here::here("data/model_data.rds"))
 # Render quarto report ----------------------------------------------------
 
 quarto::quarto_render()
+
+browseURL(here::here("report/est_weekly_report.html"))
