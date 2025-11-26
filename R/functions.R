@@ -91,6 +91,50 @@ agegp_sts <- function(pathogen, data){
 
 }
 
+#' Create `sts` object with heath board regions as units and population matrix
+#'
+#' @param pathogen Character string of pathogen name
+#' @param data Aggregated `data.frame` of weekly counts by health board
+#'
+#' @return `sts` object with heath board regions as units and population matrix
+#' @export
+#'
+#' @examples
+
+age_sts <- function(pathogen, data){
+
+  # filter the chosen disease
+  pathogen_data <- data |>
+    filter(organism == pathogen)
+
+  # Create matrix of counts by hb
+  count_matrix <- pathogen_data |>
+    select(report_age_band, count, week_date) |>
+    pivot_wider(id_cols = week_date, names_from = report_age_band, values_from = count) |>
+    select(!week_date) |>
+    as.matrix()
+
+  # Create matrix of population by hb for each week
+  pop_matrix <- pathogen_data |>
+    filter(organism == pathogen) |>
+    select(year, iso_week, report_age_band, pop) |>
+    pivot_wider(names_from = report_age_band, values_from = pop) |>
+    select(!c(year, iso_week)) |>
+    as.matrix()
+
+
+  # create the sts object
+  disease_sts <- surveillance::sts(observed = count_matrix, # weekly number of cases
+                                   start = c(min(pathogen_data$year), 01), # first week of the time series
+                                   frequency = 52, # weekly data
+                                   epochAsDate = TRUE, # we do have dates, not only index
+                                   epoch = as.numeric(unique(pathogen_data$week_date)), # here are the dates
+                                   population = pop_matrix
+  )
+
+  return(disease_sts)
+
+}
 
 
 
