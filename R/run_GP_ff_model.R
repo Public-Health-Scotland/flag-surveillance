@@ -13,7 +13,7 @@ old <- theme_set(theme_bw())
 
 # Create sts object ------------------------------------------------------
 
-# Vector of pathogen names
+# Vector of consultation names
 consultations <- unique(all_ILI_ARI_data$consultation_type) # replace with list of consultation types that we report on
 names(consultations) <- consultations
 
