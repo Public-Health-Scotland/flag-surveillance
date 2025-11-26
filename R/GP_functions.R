@@ -66,6 +66,67 @@ GP_hb_sts <- function(consultation, data) {
 
 ####################################################################################################
 
+GP_hscp_sts <- function(consultation, data) {
+
+  # Filter the chosen consultation type
+  consultation_data <- data |>
+    filter(consultation_type == consultation)
+
+  # Create a complete set of weeks for alignment
+  all_weeks <- sort(unique(consultation_data$week_date))
+
+  # ---- Counts Matrix ----
+  count_df <- consultation_data |>
+    select(week_date, HSCP_Name, count) |>
+    group_by(week_date, HSCP_Name) |>
+    summarise(count = sum(count), .groups = "drop") |>
+    pivot_wider(
+      id_cols = week_date,
+      names_from = HSCP_Name,
+      values_from = count,
+      values_fill = 0
+    ) |>
+    complete(week_date = all_weeks, fill = list(count = 0)) # fill missing weeks
+
+  count_matrix <- count_df |> select(-week_date) |> as.matrix()
+
+  # ---- Population Matrix ----
+  pop_df <- consultation_data |>
+    select(week_date, HSCP_Name, pop) |>  # use week_date for alignment
+    group_by(week_date, HSCP_Name) |>
+    summarise(pop = mean(pop), .groups = "drop") |>
+    pivot_wider(
+      id_cols = week_date,
+      names_from = HSCP_Name,
+      values_from = pop,
+      values_fill = 0
+    ) |>
+    complete(week_date = all_weeks, fill = list(pop = 0)) # align weeks
+
+  pop_matrix <- pop_df |> select(-week_date) |> as.matrix()
+
+  # ---- Diagnostics ----
+  message("Dimensions of count_matrix: ", paste(dim(count_matrix), collapse = " x "))
+  message("Dimensions of pop_matrix: ", paste(dim(pop_matrix), collapse = " x "))
+
+  if (!all(dim(count_matrix) == dim(pop_matrix))) {
+    stop("Mismatch: count_matrix and pop_matrix dimensions differ")
+  }
+
+  # ---- Create sts object ----
+  consultation_sts <- surveillance::sts(
+    observed = count_matrix,
+    start = c(min(consultation_data$year), 1),
+    frequency = 52,
+    epochAsDate = TRUE,
+    epoch = as.numeric(all_weeks), # aligned weeks
+    population = pop_matrix
+  )
+
+  return(consultation_sts)
+}
+
+####################################################################################################
 
 season_epoch <- function(sts, alarm_year = 2024, alarm_week = 40) {
   iso_info <- isoWeekYear(epoch(sts))
