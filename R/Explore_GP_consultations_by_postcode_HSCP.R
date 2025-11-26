@@ -50,6 +50,65 @@ GP_hscp_pc.noufaily <- map(GP_hscp_sts_list, farringtonFlexible, GP_con.noufaily
 
 
 
+# Tidy HSCP Outputs --------------------------------------------------------
+
+GP_output_hscp <- map(GP_hscp_pc.noufaily, tidy_outputs)
+
+# HSCP Summary Tables ------------------------------------------------------
+
+GP_hscp_season_summary <- GP_output_hscp |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        summarise(total_count = sum(observed),
+                  total_alarm = sum(alarm))
+  )
+
+GP_hscp_last_5_weeks <- GP_output_hscp |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        slice_max(week_date, n = 5)
+  )
+
+GP_hscp_week_summary <- GP_output_hscp |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        slice_max(week_date, n = 1)
+  )
+
+GP_hscp_alarm_weeks <- GP_hscp_week_summary |>
+  map(\(x)
+      x |>
+        filter(alarm == TRUE)
+  ) |>
+  list_rbind(names_to = "consultation_type") |>
+  mutate(rate = round_half_up(observed/population * 100000, 2))
+
+GP_hscp_alarms_this_week <- GP_hscp_week_summary |>
+  map(\(x)
+      x |>
+        slice_max(week_date) |>
+        filter(alarm == TRUE)
+  ) |>
+  list_rbind(names_to = "consultation_type") |>
+  mutate(rate = round_half_up(observed/population * 100000, 2))
+
+GP_hscp_historic_alarms <- GP_output_hscp |>
+  bind_rows(.id = "consultation_type") |>
+  filter(alarm == TRUE) |>
+  mutate(week_date = grates::as_isoweek(week_date),
+         rate = round_half_up(observed/population * 100000, 2)) |>
+  arrange(week_date)
+
+
+
+
+
+
+
+
 
 
 
