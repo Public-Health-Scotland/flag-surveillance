@@ -21,16 +21,13 @@ old <- theme_set(theme_bw(base_family = "Arial"))
 # Create static plots ------------------------------------------------------------
 
 # Vector of hb names to filter list
-
-hb_vec <- unique(output_list$Adenovirus$unit)
-names(hb_vec) <- hb_vec
+hb_vec <- unique(output_list$Adenovirus$unit) |>
+  set_names()
 
 # Individual plots for each pathogen in each health board
-
 plot_list <- map(output_list, \(x) map(hb_vec, gg_outbreak, tidy_output = x))
 
 # Plots for each pathogen faceted by Health board
-
 plot_list_faceted <- map2(output_list, names(output_list), gg_outbreak_facet)
 
 
