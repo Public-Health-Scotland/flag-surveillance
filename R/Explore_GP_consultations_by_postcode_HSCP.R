@@ -48,8 +48,6 @@ GP_hscp_seapoch_list <- map(GP_hscp_sts_list, ~ season_epoch(.x, alarm_year = 20
 # Run model (Farrington flexible with noufaily adaptation)
 GP_hscp_pc.noufaily <- map(GP_hscp_sts_list, farringtonFlexible, GP_con.noufaily)
 
-
-
 # Tidy HSCP Outputs --------------------------------------------------------
 
 GP_output_hscp <- map(GP_hscp_pc.noufaily, tidy_outputs)
@@ -102,53 +100,6 @@ GP_hscp_historic_alarms <- GP_output_hscp |>
          rate = round_half_up(observed/population * 100000, 2)) |>
   arrange(week_date)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Postcode alarms to explore
-Postcode_alarms_to_explore <- alarms_to_explore %>%
-  select(consultation_type, Postcode) %>%
-  distinct()
-
 ### Explore Postcode alarm data (ARI only) ----------------------------------
 ### -------------------------------------------------------------------------
 
@@ -174,9 +125,7 @@ GP_postcode_seapoch_list <- map(GP_postcode_sts_list, ~ season_epoch(.x, alarm_y
 # Run model (Farrington flexible with noufaily adaptation)
 GP_postcode_pc.noufaily <- map(GP_postcode_sts_list, farringtonFlexible, GP_con.noufaily)
 
-
-
-# Tidy HSCP Outputs --------------------------------------------------------
+# Tidy Postcode Outputs --------------------------------------------------------
 
 GP_output_postcode <- map(GP_postcode_pc.noufaily, tidy_outputs)
 
