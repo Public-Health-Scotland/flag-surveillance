@@ -112,3 +112,135 @@ GP_hscp_historic_alarms <- GP_output_hscp |>
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Postcode alarms to explore
+Postcode_alarms_to_explore <- alarms_to_explore %>%
+  select(consultation_type, Postcode) %>%
+  distinct()
+
+### Explore Postcode alarm data (ARI only) ----------------------------------
+### -------------------------------------------------------------------------
+
+# Filter all_hscp_data to only include rows that match
+# consultation_type and postcode to explore this week (ARI only)
+Postcode_data_to_explore <- GP_postcode_data %>%
+  semi_join(Postcode_alarms_to_explore, by = c("consultation_type", "Postcode")) %>%
+  filter(consultation_type == "ARI")
+
+# Vector of consultation names to explore by postcode
+consultations_postcode <- unique(Postcode_data_to_explore$consultation_type) # replace with list of consultation types that we report on
+names(consultations_postcode) <- consultations_postcode
+
+# Create list of sts objects for each consultation type
+GP_postcode_sts_list <- map(consultations_postcode, GP_postcode_sts, data = Postcode_data_to_explore)
+
+# Run Farrington Flexible model --------------------------------------------
+## Postcodes ---------------------------------------------------------------
+
+# Calculate range to plot (from the start of the season)
+GP_postcode_seapoch_list <- map(GP_postcode_sts_list, ~ season_epoch(.x, alarm_year = 2024, alarm_week = 40))
+
+# Run model (Farrington flexible with noufaily adaptation)
+GP_postcode_pc.noufaily <- map(GP_postcode_sts_list, farringtonFlexible, GP_con.noufaily)
+
+
+
+# Tidy HSCP Outputs --------------------------------------------------------
+
+GP_output_postcode <- map(GP_postcode_pc.noufaily, tidy_outputs)
+
+# Postcode Summary Tables ------------------------------------------------------
+
+GP_postcode_season_summary <- GP_output_postcode |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        summarise(total_count = sum(observed),
+                  total_alarm = sum(alarm))
+  )
+
+GP_postcode_last_5_weeks <- GP_output_postcode |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        slice_max(week_date, n = 5)
+  )
+
+GP_postcode_week_summary <- GP_output_postcode |>
+  map(\(x)
+      x |>
+        group_by(unit) |>
+        slice_max(week_date, n = 1)
+  )
+
+GP_postcode_alarm_weeks <- GP_postcode_week_summary |>
+  map(\(x)
+      x |>
+        filter(alarm == TRUE)
+  ) |>
+  list_rbind(names_to = "consultation_type") |>
+  mutate(rate = round_half_up(observed/population * 100000, 2))
+
+GP_postcode_alarms_this_week <- GP_postcode_week_summary |>
+  map(\(x)
+      x |>
+        slice_max(week_date) |>
+        filter(alarm == TRUE)
+  ) |>
+  list_rbind(names_to = "consultation_type") |>
+  mutate(rate = round_half_up(observed/population * 100000, 2))
+
+GP_postcode_historic_alarms <- GP_output_postcode |>
+  bind_rows(.id = "consultation_type") |>
+  filter(alarm == TRUE) |>
+  mutate(week_date = grates::as_isoweek(week_date),
+         rate = round_half_up(observed/population * 100000, 2)) |>
+  arrange(week_date)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
