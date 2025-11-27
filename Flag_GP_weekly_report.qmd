@@ -125,6 +125,97 @@ GP_historic_alarms |>
        fill = "Health Board")
 ```
 
+### Weekly HSCP alarms within health board alarms
+
+```{r}
+if (nrow(alarms_to_explore) == 0) {
+  cat("**No Health Board alarms to explore this week**")
+
+} else if (nrow(GP_hscp_alarms_this_week) == 0) {
+  cat("**No HSCP alarms within Health Board alarms this week**")
+
+} else {
+  hscp_with_GP_outbreaks <- GP_hscp_alarms_this_week |>
+    dplyr::pull(unit) |>
+    unique()
+
+  # Dynamic sentence
+  cat(
+    glue::glue(
+      "In week {report_week}, alarms were raised in {length(hscp_with_GP_outbreaks)} Health and Social Care Partnerships: {knitr::combine_words(hscp_with_GP_outbreaks)}."
+    ),
+    "\n\n"
+  )
+
+  # Render table
+  GP_hscp_alarms_this_week |>
+    dplyr::select(unit, consultation_type, observed, expected, upperbound, rate) |>
+    gt::gt(groupname_col = "unit", row_group_as_column = TRUE) |>
+    gt::cols_label(
+      consultation_type = "Consultation Type",
+      observed = "Observed",
+      expected = "Expected",
+      upperbound = "Alarm Threshold",
+      rate = "Rate*"
+    ) |>
+    gt::tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+    gt::tab_options(row_group.default_label = "HSCP") |>
+    gt::opt_interactive(
+      use_search = TRUE,
+      use_highlight = TRUE,
+      use_compact_mode = TRUE,
+      use_pagination = FALSE
+    )
+}
+```
+
+### Weekly ARI Postcode alarms within ARI health board alarms
+
+```{r}
+if (nrow(alarms_to_explore) == 0) {
+  cat("**No Health Board alarms to explore this week**")
+  
+} else if (nrow(Postcode_data_to_explore) == 0) {
+  cat("**No ARI Health Board alarms to explore by postcode this week**")
+  
+} else if (nrow(GP_postcode_alarms_this_week) == 0) {
+  cat("**No ARI postcode alarms within Health Board alarms this week**")
+  
+} else {
+  postcode_with_GP_outbreaks <- GP_postcode_alarms_this_week |>
+    dplyr::pull(unit) |>
+    unique()
+  
+  # Dynamic sentence
+  cat(
+    glue::glue(
+      "In week {report_week}, alarms were raised in {length(postcode_with_GP_outbreaks)} Health and Social Care Partnerships: {knitr::combine_words(postcode_with_GP_outbreaks)}."
+    ),
+    "\n\n"
+  )
+  
+  # Render table
+  GP_postcode_alarms_this_week |>
+    dplyr::select(unit, consultation_type, observed, expected, upperbound, rate) |>
+    gt::gt(groupname_col = "unit", row_group_as_column = TRUE) |>
+    gt::cols_label(
+      consultation_type = "Consultation Type",
+      observed = "Observed",
+      expected = "Expected",
+      upperbound = "Alarm Threshold",
+      rate = "Rate*"
+    ) |>
+    gt::tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+    gt::tab_options(row_group.default_label = "Postcode") |>
+    gt::opt_interactive(
+      use_search = TRUE,
+      use_highlight = TRUE,
+      use_compact_mode = TRUE,
+      use_pagination = FALSE
+    )
+}
+```
+
 ------------------------------------------------------------------------
 
 ![](_extensions/phs-html-quarto/phs-logo.png){.column-margin fig-align="right"}
