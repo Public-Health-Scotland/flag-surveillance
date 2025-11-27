@@ -1,9 +1,15 @@
-
 #isolate which healthboards to explore
 alarms_to_explore <- GP_alarms_this_week %>%
   filter(unit != "overall") %>%
   mutate(health_board = unit) %>%
   select(consultation_type, health_board)
+
+# Check if both are empty
+if (nrow(alarms_to_explore) == 0) {
+  message("No ILI or ARI Health Board Alarms in the previous week.")} else {
+
+# Continue with rest of script
+cat("At least one of ILI or ARI has Health Board alarms. Continuing...\n")
 
 #isolate HSCP and Postcodes to match with alarm HBs
 HB_HSCPs_Postcodes <- all_ILI_ARI_data %>%
@@ -109,6 +115,10 @@ Postcode_data_to_explore <- GP_postcode_data %>%
   semi_join(Postcode_alarms_to_explore, by = c("consultation_type", "Postcode")) %>%
   filter(consultation_type == "ARI")
 
+# Check if both are empty
+if (nrow(Postcode_data_to_explore) == 0) {
+  message("No ARI Health Board Alarms in the previous week. Skipping postcode analysis")} else {
+
 # Vector of consultation names to explore by postcode
 consultations_postcode <- unique(Postcode_data_to_explore$consultation_type) # replace with list of consultation types that we report on
 names(consultations_postcode) <- consultations_postcode
@@ -177,19 +187,9 @@ GP_postcode_historic_alarms <- GP_output_postcode |>
          rate = round_half_up(observed/population * 100000, 2)) |>
   arrange(week_date)
 
+  } # end to else option which runs Postcode analysis if any ARI HB alarms in past week
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+  } # end to else option which runs whole script if any ILI or ARI HB alarms in past week
 
 
