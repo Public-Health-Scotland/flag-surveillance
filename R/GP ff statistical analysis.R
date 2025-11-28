@@ -31,6 +31,8 @@ GP_ARI_Nat_HB_FF_alarms <- GP_ARI_Nat_HB_FF_data %>%
   select(week_date, unit, alarm)
 GP_ARI_Nat_HB_FF_alarms$alarm <- as.numeric(GP_ARI_Nat_HB_FF_alarms$alarm)
 
+## To-do:
+# -- Combine with data for if MEM above baseline for ILI or ARI on that week
 
 
 
