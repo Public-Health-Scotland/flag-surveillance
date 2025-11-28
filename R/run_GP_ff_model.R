@@ -126,6 +126,10 @@ GP_historic_alarms <- GP_output_list |>
          rate = round_half_up(observed/population * 100000, 2)) |>
   arrange(week_date)
 
+# GP HSCP and postcode analysis -------------------------------------------
+
+source("R/Explore_GP_consultations_by_postcode_HSCP.R")
+
 # Save Data ---------------------------------------------------------------
 # Save plots
 
