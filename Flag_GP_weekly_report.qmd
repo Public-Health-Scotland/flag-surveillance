@@ -189,7 +189,7 @@ if (nrow(alarms_to_explore) == 0) {
   # Dynamic sentence
   cat(
     glue::glue(
-      "In week {report_week}, alarms were raised in {length(postcode_with_GP_outbreaks)} Health and Social Care Partnerships: {knitr::combine_words(postcode_with_GP_outbreaks)}."
+      "In week {report_week}, alarms were raised in {length(postcode_with_GP_outbreaks)} postcodes: {knitr::combine_words(postcode_with_GP_outbreaks)}."
     ),
     "\n\n"
   )
