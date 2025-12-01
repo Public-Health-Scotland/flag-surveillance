@@ -35,6 +35,8 @@ all_data <- readRDS("/PHI_conf/Respiratory_Surveillance_Viral/GP L8/04 Analysis/
 all_data <- all_data %>%
   drop_na(HSCP_Name)
 
+#add hour to dates so winter time difference negated
+all_data$week_date <- all_data$week_date + hours(1)
 #convert from date/time to date
 all_data$week_date <- as.Date(all_data$week_date)
 
