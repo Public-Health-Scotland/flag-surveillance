@@ -165,7 +165,7 @@ ili_hb_above_baseline <- temp_ili_hb %>%
   left_join(date_reference, by = c("ISOyear", "ISOweek")) %>%
   select(ISOweek_beginning, ISOyear, ISOweek, description, activity_flag) %>%
   distinct() %>%
-  rename(week_date = ISOweek_beginning)
+  rename(week_date = ISOweek_beginning, unit = description)
 
 
 
@@ -340,6 +340,6 @@ ari_hb_above_baseline <- temp_ari_hb %>%
   left_join(date_reference, by = c("ISOyear", "ISOweek")) %>%
   select(ISOweek_beginning, ISOyear, ISOweek, description, activity_flag) %>%
   distinct() %>%
-  rename(week_date = ISOweek_beginning)
+  rename(week_date = ISOweek_beginning, unit = description)
 
 
