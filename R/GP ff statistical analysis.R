@@ -12,6 +12,8 @@
 library(irr)
 library(psych)
 library(epitools)
+library(lme4)
+library(broom.mixed)
 
 
 ### --- Create dataframes ---
@@ -339,50 +341,72 @@ oddsratio(ILI_hscp_tab)
 
 
 
-
-
-
-
-
-
-# R code example for a mixed-effects logistic regression model
-
-# Install and load required packages
-install.packages(c("lme4", "broom.mixed"))
-library(lme4)
-library(broom.mixed)
-
-# Example: Your dataframe should have columns:
-# HSCP_alarm (binary: 0/1)
-# HealthBoard_alarm (binary: 0/1)
-# HealthBoard (factor identifying the Health Board)
-# HSCP (optional if you want random intercepts for HSCP too)
+## Calculate Odds Ratio of an ARI postcode alarm occurring within a healthboard with an ARI alarm vs an
+## ARI postcode alarm occurring within a healthboard without an ARI alarm, using a mixed-effects logistic regression model to
+## account for clustering of postcodes within HBs
 
 # Fit mixed-effects logistic regression
-model <- glmer(
-  HSCP_alarm ~ HealthBoard_alarm + (1 | HealthBoard),
-  data = df,
+ARI_postcode_model <- glmer(
+  health_board_alarm ~ alarm + (1 | unit),
+  data = GP_ARI_Postcode_FF_alarms,
   family = binomial(link = "logit")
 )
 
 # View summary
-summary(model)
+summary(ARI_postcode_model)
 
 # Extract odds ratio and confidence intervals
-model_results <- broom.mixed::tidy(model, effects = "fixed", conf.int = TRUE, exponentiate = TRUE)
-print(model_results)
-
-# Optional: Add HSCP random effect if needed
-# model2 <- glmer(
-#   HSCP_alarm ~ HealthBoard_alarm + (1 | HealthBoard) + (1 | HSCP),
-#   data = df,
-#   family = binomial(link = "logit")
-# )
+ARI_postcode_model_results <- broom.mixed::tidy(ARI_postcode_model, effects = "fixed", conf.int = TRUE, exponentiate = TRUE)
+print(ARI_postcode_model_results)
 
 # Check model fit
-glance(model)
+glance(ARI_postcode_model)
 
-# Predict probabilities (optional)
+
+## Calculate Odds Ratio of an ARI hscp alarm occurring within a healthboard with an ARI alarm vs an
+## ARI hscp alarm occurring within a healthboard without an ARI alarm, using a mixed-effects logistic regression model to
+## account for clustering of HSCPs within HBs
+
+# Fit mixed-effects logistic regression
+ARI_hscp_model <- glmer(
+  health_board_alarm ~ alarm + (1 | unit),
+  data = GP_ARI_hscp_FF_alarms,
+  family = binomial(link = "logit")
+)
+
+# View summary
+summary(ARI_hscp_model)
+
+# Extract odds ratio and confidence intervals
+ARI_hscp_model_results <- broom.mixed::tidy(ARI_hscp_model, effects = "fixed", conf.int = TRUE, exponentiate = TRUE)
+print(ARI_hscp_model_results)
+
+# Check model fit
+glance(ARI_hscp_model)
+
+
+
+## Calculate Odds Ratio of an ILI hscp alarm occurring within a healthboard with an ILI alarm vs an
+## ILI hscp alarm occurring within a healthboard without an ILI alarm, using a mixed-effects logistic regression model to
+## account for clustering of HSCPs within HBs
+
+# Fit mixed-effects logistic regression
+ILI_hscp_model <- glmer(
+  health_board_alarm ~ alarm + (1 | unit),
+  data = GP_ILI_hscp_FF_alarms,
+  family = binomial(link = "logit")
+)
+
+# View summary
+summary(ILI_hscp_model)
+
+# Extract odds ratio and confidence intervals
+ILI_hscp_model_results <- broom.mixed::tidy(ILI_hscp_model, effects = "fixed", conf.int = TRUE, exponentiate = TRUE)
+print(ILI_hscp_model_results)
+
+# Check model fit
+glance(ILI_hscp_model)
+
 
 
 
