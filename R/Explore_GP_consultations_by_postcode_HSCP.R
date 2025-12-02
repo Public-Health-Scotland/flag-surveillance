@@ -129,11 +129,32 @@ GP_postcode_sts_list <- map(consultations_postcode, GP_postcode_sts, data = Post
 # Run Farrington Flexible model --------------------------------------------
 ## Postcodes ---------------------------------------------------------------
 
+GP_postcode_con.noufaily <- list(
+  range = GP_seapoch_list[[1]],  # dynamically calculated
+  noPeriods = 6,
+  b = 1,
+  w = 3,
+  reweight = TRUE,
+  trend = FALSE, #Trend factor collapses to one level with postcode data because there are sometimes constant low counts.
+  populationOffset = FALSE, #False as population for some postcodes is consistently low
+  powertrans = "2/3",
+  fitFun = "algo.farrington.fitGLM.flexible",
+  weightsThreshold = 2.58,
+  pastWeeksNotIncluded = 2,
+  pThresholdTrend = 1,
+  thresholdMethod = "nbPlugin",
+  alpha = 0.05,
+  limit54 = c(8, 4) #If limit54 excludes too many weeks, the baseline has only one season level. Using full data or a longer reference period ensures multiple levels (error if data collapses to 1 level).
+)
+
+#Make sure theres enough rows for each postcode to do analysis
+GP_postcode_sts_list <- Filter(function(x) nrow(x@observed) >= 20, GP_postcode_sts_list)
+
 # Calculate range to plot (from the start of the season)
 GP_postcode_seapoch_list <- map(GP_postcode_sts_list, ~ season_epoch(.x, alarm_year = 2024, alarm_week = 40))
 
 # Run model (Farrington flexible with noufaily adaptation)
-GP_postcode_pc.noufaily <- map(GP_postcode_sts_list, farringtonFlexible, GP_con.noufaily)
+GP_postcode_pc.noufaily <- map(GP_postcode_sts_list, farringtonFlexible, GP_postcode_con.noufaily)
 
 # Tidy Postcode Outputs --------------------------------------------------------
 
