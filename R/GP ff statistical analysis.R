@@ -345,7 +345,7 @@ oddsratio(ILI_hscp_tab)
 
 
 
-
+# R code example for a mixed-effects logistic regression model
 
 # Install and load required packages
 install.packages(c("lme4", "broom.mixed"))
