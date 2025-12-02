@@ -121,6 +121,8 @@ alarms_this_week |>
 ```{r interactive national plots}
 #| results: asis
 
+library(htmltools)
+
 tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
 
 
@@ -129,7 +131,7 @@ national_iplots <- iplot_list |>
       keep_at(x, "overall")) |>
   list_flatten()
 
-tibble(
+tabs <- tibble(
   organism = pathogens,
   plots = national_iplots  |> 
       map(\(x)
@@ -142,9 +144,18 @@ tibble(
                           )
           )
       )
-  ) |>
-  quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+   ) #|>
+  # quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
 
+
+# Render tabset and wrap in tagList
+htmltools::tagList(
+  quartabs::render_tabset(data = tabs, tabset_vars = tabs$organism, output_vars = tabs$plots, pills = TRUE)
+)
+
+```
+
+```{r interactive plot test}
 ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
                 options = list(
                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
