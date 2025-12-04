@@ -20,13 +20,13 @@ title-block-style: manuscript
 execute: 
   echo: false
   warning: false
-  freeze: true
+  freeze: false
+  cache: false
 ---
 
 ```{r setup, include=FALSE}
 
-pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, arrow,
-               grates, ggiraph)
+pacman::p_load(tidyverse, surveillance, glue, gt, gtExtras, quartabs, here, arrow, htmlwidgets, grates, ggiraph)
 
 
 load(here::here("data/model_data.rds"))
@@ -45,9 +45,7 @@ report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit
 #   set_names()
 ```
 
-## Model Outputs
-
-### Alarms Raised
+## Summary
 
 ```{r alarms_stats}
 hb_with_outbreaks <- alarms_this_week |> 
@@ -63,38 +61,107 @@ national_outbreaks <-  alarms_this_week |>
 
 In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`. At the national level, `r length(national_outbreaks)` respiratory pathogens on ECOSS were above the alarm threshold: `r knitr::combine_words(national_outbreaks)`.
 
-```{r alarms_table}
+## Scotland
+
+```{r national_alarms_table}
 alarms_this_week |>
-  select(hb2019name, organism, observed, expected, upperbound, rate) |> 
-  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |> 
+  filter(unit == "overall") |>
+  select(hb2019name, organism, observed, expected, upperbound, rate) |>
+  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |>
   cols_label(organism = "ECOSS Pathogen",
              observed = "Observed",
              expected = "Expected",
              upperbound = "Alarm Threshold",
-             rate = "Rate*") |> 
+             rate = "Rate*") |>
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
-  tab_options(row_group.default_label = "Health Board") |> 
+  tab_options(row_group.default_label = "Health Board") |>
   opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
 ```
 
-### Scotland
+```{r girafe-dependency-loader}
+#| include: false
+#| cache: false
 
-```{r national plots}
-#| results: asis
-# national_plots <- plot_list |> 
-#   map(\(x) 
-#       keep_at(x, "overall")) |> 
-#   list_flatten()
-# 
-# tibble(
-#   organism = pathogens,
-#   plots = c(national_plots)
-# ) |> 
-#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
+# Create a dummy plot to force the 'girafe' dependencies (JS/CSS)
+# to be loaded into the document header by Knitr/Quarto.
+dummy_plot <- ggplot2::ggplot(data.frame(x = 1, y = 1), ggplot2::aes(x, y)) + 
+  ggiraph::geom_point_interactive(ggplot2::aes(tooltip = "test"))
 
+girafe(ggobj = dummy_plot)
+
+# Note: This chunk will not be visible in the final document.
 ```
 
-### Health Boards
+```{r interactive national plots}
+#| results: asis
+
+tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
+
+national_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "overall")) |>
+  purrr::list_flatten()
+
+# --- Custom Function to Generate HTML with Centering (NEW) ---
+get_girafe_html <- function(gg_plot, plot_index) {
+  girafe_obj <- girafe(
+    ggobj = gg_plot,
+    options = list(
+      opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+      # Set plot width to 100% of its immediate container
+      opts_sizing(width = 1.0),
+      opts_hover(css = ''),
+      opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+    )
+  )
+  
+  centered_plot <- htmltools::tagList(
+    htmltools::div(
+      # CSS to ensure full width and center any content (the girafe plot)
+      style = "width: 100%; text-align: center;", 
+      girafe_obj
+    )
+  )
+  
+  # Convert the htmltools tag object to a raw HTML string
+  # Use as.character() to get the raw HTML markup string
+  return(as.character(centered_plot))
+}
+
+# --- Create the Tabs Data Frame ---
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    national_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+## Health Boards
+
+```{r hb_alarms_table}
+alarms_this_week |>
+  filter(unit %in% hb_names$health_board[hb_names$health_board != "overall"]) |>
+  select(hb2019name, organism, observed, expected, upperbound, rate) |>
+  gt(groupname_col = "hb2019name", row_group_as_column = TRUE) |>
+  cols_label(organism = "ECOSS Pathogen",
+             observed = "Observed",
+             expected = "Expected",
+             upperbound = "Alarm Threshold",
+             rate = "Rate*") |>
+  tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+  tab_options(row_group.default_label = "Health Board") |>
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
+```
 
 ```{r hb plots}
 #| results: asis
@@ -116,63 +183,24 @@ alarms_this_week |>
 
 ```
 
-## Interactive Plots
-
-```{r interactive national plots}
-#| results: asis
-
-library(htmltools)
-
-tooltip_css <- "background-color:#3F3685;font-family:Arial;color:white;padding:5px;border-radius:3px;"
-
-
-national_iplots <- iplot_list |>
-  map(\(x)
-      keep_at(x, "overall")) |>
-  list_flatten()
-
-tabs <- tibble(
-  organism = pathogens,
-  plots = national_iplots  |> 
-      map(\(x)
-          ggiraph::girafe(ggobj = x,
-                          options = list(
-                            opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-                            opts_sizing(width = .8),
-                            opts_hover(css = ''),
-                            opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-                          )
-          )
-      )
-   ) #|>
-  # quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
-
-
-# Render tabset and wrap in tagList
-htmltools::tagList(
-  quartabs::render_tabset(data = tabs, tabset_vars = tabs$organism, output_vars = tabs$plots, pills = TRUE)
-)
-
-```
-
 ```{r interactive plot test}
-ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
-                options = list(
-                  opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-                  opts_sizing(width = 1),
-                  opts_hover(css = ''),
-                  opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-                )
-)
+# ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
+#                 options = list(
+#                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
+#                   opts_sizing(width = 1),
+#                   opts_hover(css = ''),
+#                   opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+#                 )
+# )
 ```
 
 ## Weekly alarms by health board
 
 ```{r}
-historic_alarms |> 
-  mutate(unit = factor(unit, levels = hb_vec)) |> 
-  group_by(week_date, unit) |> 
-  count() |> 
+historic_alarms |>
+  mutate(unit = factor(unit, levels = hb_vec)) |>
+  group_by(week_date, unit) |>
+  count() |>
   ggplot(aes(x = week_date, y = n, fill = unit)) +
   geom_col() +
   labs(x = "ISO Week",

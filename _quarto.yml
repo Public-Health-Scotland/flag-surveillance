@@ -3,7 +3,7 @@ project:
   output-dir: report
 
 website:
-  title: "🚩 FLAG surveillance"
+  title: "FLAG surveillance 🚩"
   navbar:
     logo: _extensions/phs-html-quarto/phs-logo-white.png
     background: "#3F3685"
