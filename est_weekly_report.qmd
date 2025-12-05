@@ -38,6 +38,8 @@ old <- theme_set(theme_bw(base_family = "Arial"))
 
 report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit = "week", week_start = 1)-7)
 
+age_names <- c("Under 1", "1-4", "5-14", "15-44", "45-64", "65-74", "Over 75")
+
 # pathogens <- names(plot_list) |> 
 #   set_names()
 # 
@@ -79,7 +81,7 @@ alarms_this_week |>
 ```
 
 ```{r girafe-dependency-loader}
-#| include: false
+#| include: false # Note: This chunk will not be visible in the final document.
 #| cache: false
 
 # Create a dummy plot to force the 'girafe' dependencies (JS/CSS)
@@ -89,7 +91,6 @@ dummy_plot <- ggplot2::ggplot(data.frame(x = 1, y = 1), ggplot2::aes(x, y)) +
 
 girafe(ggobj = dummy_plot)
 
-# Note: This chunk will not be visible in the final document.
 ```
 
 ```{r interactive national plots}
@@ -102,7 +103,7 @@ national_iplots <- iplot_list |>
       keep_at(x, "overall")) |>
   purrr::list_flatten()
 
-# --- Custom Function to Generate HTML with Centering (NEW) ---
+# Custom Function to Generate HTML with Centering
 get_girafe_html <- function(gg_plot, plot_index) {
   girafe_obj <- girafe(
     ggobj = gg_plot,
@@ -111,7 +112,8 @@ get_girafe_html <- function(gg_plot, plot_index) {
       # Set plot width to 100% of its immediate container
       opts_sizing(width = 1.0),
       opts_hover(css = ''),
-      opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
+      opts_hover_inv(css ='opacity:0.8;fill:lightgrey;'),
+      opts_zoom(min = 1, max = 4)
     )
   )
   
@@ -128,7 +130,7 @@ get_girafe_html <- function(gg_plot, plot_index) {
   return(as.character(centered_plot))
 }
 
-# --- Create the Tabs Data Frame ---
+# Create the Tabs Data Frame 
 tabs <- tibble::tibble(
   organism = pathogens,
   plots = purrr::map_chr(
@@ -160,52 +162,665 @@ alarms_this_week |>
              rate = "Rate*") |>
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
   tab_options(row_group.default_label = "Health Board") |>
-  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE)
 ```
 
-```{r hb plots}
-#| results: asis
-#| fig-width: 12
-#| fig-height: 8
 
+```{r hb_alarms_heatmap}
+period_date <- max(historic_alarms$week_date) - 4
 
-# tibble(
-#   organism = pathogens,
-#   plots = c(
-#     plot_list_faceted |>
-#       map(\(x) 
-#           x + labs(title = NULL,
-#        subtitle = NULL)
-#        )
-#     )
-#   ) |> 
-#   quartabs::render_tabset(tabset_vars = organism, output_vars = plots, pills = TRUE)
-
-```
-
-```{r interactive plot test}
-# ggiraph::girafe(ggobj = iplot_list$`Influenza A(H3)`$overall,
-#                 options = list(
-#                   opts_tooltip(css = tooltip_css, offx = 15, offy = 15, opacity = 1),
-#                   opts_sizing(width = 1),
-#                   opts_hover(css = ''),
-#                   opts_hover_inv(css ='opacity:0.8;fill:lightgrey;')
-#                 )
-# )
-```
-
-## Weekly alarms by health board
-
-```{r}
 historic_alarms |>
-  mutate(unit = factor(unit, levels = hb_vec)) |>
-  group_by(week_date, unit) |>
+  filter(week_date >= period_date,
+         unit %in% hb_names$health_board[hb_names$health_board != "overall"]) |> 
+  mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |> 
+  ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
+  geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+  facet_wrap(~organism) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = "ISO Week",
+       y = "Health Board",
+       fill = "Alarm")
+  
+```
+
+### Ayrshire and Arran
+
+```{r AA_plots}
+#| results: asis
+
+AA_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "AA")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    AA_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Borders
+
+```{r BR_plots}
+#| results: asis
+
+BR_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "BR")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    BR_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Dumfries and Galloway
+
+```{r DG_plots}
+#| results: asis
+
+DG_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "DG")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    DG_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Fife
+
+```{r FF_plots}
+#| results: asis
+
+FF_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "FF")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    FF_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Forth Valley
+
+```{r FV_plots}
+#| results: asis
+
+FV_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "FV")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    FV_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Grampian
+
+```{r GR_plots}
+#| results: asis
+
+GR_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "GR")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    GR_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Greater Glasgow and Clyde
+
+```{r GC_plots}
+#| results: asis
+
+GC_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "GC")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    GC_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Highland
+
+```{r HG_plots}
+#| results: asis
+
+HG_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "HG")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    HG_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Lanarkshire
+
+```{r LN_plots}
+#| results: asis
+
+LN_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "LN")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    LN_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Lothian
+
+```{r LO_plots}
+#| results: asis
+
+LO_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "LO")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    LO_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Orkney
+
+```{r OR_plots}
+#| results: asis
+
+OR_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "OR")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    OR_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Shetland
+
+```{r SH_plots}
+#| results: asis
+
+SH_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "SH")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    SH_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Tayside
+
+```{r TY_plots}
+#| results: asis
+
+TY_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "TY")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    TY_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Western Isles
+
+```{r WI_plots}
+#| results: asis
+
+WI_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "WI")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    WI_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+## Age groups
+
+```{r age_alarms_table}
+alarms_this_week |>
+  filter(unit %in% age_names) |>
+  select(unit, organism, observed, expected, upperbound, rate) |>
+  gt(groupname_col = "unit", row_group_as_column = TRUE) |>
+  cols_label(organism = "ECOSS Pathogen",
+             observed = "Observed",
+             expected = "Expected",
+             upperbound = "Alarm Threshold",
+             rate = "Rate*") |>
+  tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
+  tab_options(row_group.default_label = "Health Board") |>
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE)
+```
+
+```{r age_alarms_heatmap}
+period_date <- max(historic_alarms$week_date) - 4
+
+historic_alarms |>
+  filter(week_date >= period_date,
+         unit %in% age_names) |> 
+  mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |> 
+  ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
+  geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+  facet_wrap(~organism) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = "ISO Week",
+       y = "Health Board",
+       fill = "Alarm")
+  
+```
+
+### Under 1
+
+```{r under1_plots}
+#| results: asis
+
+under1_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "Under 1")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    under1_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### 1 to 4
+
+```{r age_14_plots}
+#| results: asis
+
+age_14_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "1-4")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_14_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### 5 to 14
+
+```{r age_514_plots}
+#| results: asis
+
+age_514_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "5-14")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_514_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### 15 to 44
+
+```{r age_1544_plots}
+#| results: asis
+
+age_1544_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "15-44")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_1544_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### 45 to 64
+
+```{r age_4564_plots}
+#| results: asis
+
+age_4564_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "45-64")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_4564_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### 65 to 74
+
+```{r age_6574_plots}
+#| results: asis
+
+age_6574_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "65-74")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_6574_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+### Over 75
+
+```{r age_over75_plots}
+#| results: asis
+
+age_over75_iplots <- iplot_list |>
+  purrr::map(\(x)
+      keep_at(x, "Over 75")) |>
+  purrr::list_flatten()
+
+# Create the Tabs Data Frame 
+tabs <- tibble::tibble(
+  organism = pathogens,
+  plots = purrr::map_chr(
+    age_over75_iplots, 
+    get_girafe_html
+  )
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+```
+
+
+## Weekly alarms by pathogen
+
+```{r alarms_by_pathogen}
+
+historic_alarms |>
+  #mutate(unit = factor(unit, levels = hb_vec)) |>
+  group_by(week_date, organism) |>
   count() |>
-  ggplot(aes(x = week_date, y = n, fill = unit)) +
-  geom_col() +
+  ggplot(aes(x = week_date, y = n, fill = organism)) +
+  geom_col(colour = "grey20", linewidth = 0.2) +
+  #phsstyles::scale_fill_discrete_phs(palette = "all") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
   labs(x = "ISO Week",
        y = "Count",
-       fill = "Health Board")
+       fill = "Pathogen")
 ```
 
 ------------------------------------------------------------------------
