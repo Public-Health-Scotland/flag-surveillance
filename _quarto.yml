@@ -4,6 +4,7 @@ project:
 
 website:
   title: "FLAG surveillance 🚩"
+  favicon: _extensions/phs-html-quarto/favicon_phs.ico
   navbar:
     logo: _extensions/phs-html-quarto/phs-logo-white.png
     background: "#3F3685"
