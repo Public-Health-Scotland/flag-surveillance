@@ -40,6 +40,8 @@ report_week <- lubridate::isoweek(lubridate::floor_date(lubridate::today(), unit
 
 age_names <- c("Under 1", "1-4", "5-14", "15-44", "45-64", "65-74", "Over 75")
 
+period_date <- max(historic_alarms$week_date) - 4
+
 # pathogens <- names(plot_list) |> 
 #   set_names()
 # 
@@ -51,7 +53,7 @@ age_names <- c("Under 1", "1-4", "5-14", "15-44", "45-64", "65-74", "Over 75")
 
 ```{r alarms_stats}
 hb_with_outbreaks <- alarms_this_week |> 
-  filter(unit != "overall") |> 
+  filter(unit %in% hb_names$health_board[hb_names$health_board != "overall"]) |> 
   pull(unit) |> 
   unique()
 
@@ -59,9 +61,16 @@ national_outbreaks <-  alarms_this_week |>
   filter(unit == "overall") |> 
   pull(organism) |> 
   unique()
+
+age_groups_with_outbreaks <- alarms_this_week |> 
+  filter(unit %in% age_names) |> 
+  mutate(unit = factor(unit, levels = age_names)) |> 
+  pull(unit) |> 
+  unique() |> 
+  sort()
 ```
 
-In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`. At the national level, `r length(national_outbreaks)` respiratory pathogens on ECOSS were above the alarm threshold: `r knitr::combine_words(national_outbreaks)`.
+In week `r report_week`, alarms were raised in `r length(hb_with_outbreaks)` out of 15 NHS Scotland health boards: `r knitr::combine_words(hb_with_outbreaks)`. At the national level, `r length(national_outbreaks)` respiratory pathogens on ECOSS were above the alarm threshold: `r knitr::combine_words(national_outbreaks)`. Alarms were also raised in the `r knitr::combine_words(age_groups_with_outbreaks)` age groups.
 
 ## Scotland
 
@@ -77,7 +86,22 @@ alarms_this_week |>
              rate = "Rate*") |>
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
   tab_options(row_group.default_label = "Health Board") |>
-  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE)
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = FALSE, page_size_default = 3)
+```
+
+### Recent alarms
+
+```{r}
+historic_alarms |>
+  filter(week_date >= period_date,
+         unit == "overall") |>
+  mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |>
+  ggplot(aes(x = factor(week_date), y = organism, fill = alarm)) +
+  geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = "ISO Week",
+       y = "Organism",
+       fill = "Alarm")
 ```
 
 ```{r girafe-dependency-loader}
@@ -162,24 +186,43 @@ alarms_this_week |>
              rate = "Rate*") |>
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
   tab_options(row_group.default_label = "Health Board") |>
-  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE)
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE, page_size_default = 3)
 ```
 
+### Recent alarms
 
 ```{r hb_alarms_heatmap}
+#| results: asis
+
 period_date <- max(historic_alarms$week_date) - 4
 
-historic_alarms |>
+heat_list <- historic_alarms |>
   filter(week_date >= period_date,
-         unit %in% hb_names$health_board[hb_names$health_board != "overall"]) |> 
+         unit %in% hb_names$health_board[hb_names$health_board != "overall"]) |>
   mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |> 
-  ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
-  geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
-  facet_wrap(~organism) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  labs(x = "ISO Week",
-       y = "Health Board",
-       fill = "Alarm")
+  split(~organism)
+
+tabs <- tibble::tibble(
+  organism = names(heat_list),
+  plots = heat_list |> 
+    map(\(x){
+      x |> 
+        ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
+        geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+        labs(x = "ISO Week",
+             y = "Health Board",
+             fill = "Alarm")
+    })
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
   
 ```
 
@@ -580,6 +623,8 @@ quartabs::render_tabset(
 ```{r age_alarms_table}
 alarms_this_week |>
   filter(unit %in% age_names) |>
+  mutate(unit = factor(unit, levels = age_names)) |> 
+  arrange(unit) |> 
   select(unit, organism, observed, expected, upperbound, rate) |>
   gt(groupname_col = "unit", row_group_as_column = TRUE) |>
   cols_label(organism = "ECOSS Pathogen",
@@ -589,24 +634,54 @@ alarms_this_week |>
              rate = "Rate*") |>
   tab_footnote(footnote = "* Incidence rate (per 100,000 population)") |>
   tab_options(row_group.default_label = "Health Board") |>
-  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE)
+  opt_interactive(use_search = TRUE, use_highlight = TRUE, use_compact_mode = TRUE, use_pagination = TRUE, page_size_default = 3)
 ```
 
-```{r age_alarms_heatmap}
-period_date <- max(historic_alarms$week_date) - 4
+### Recent alarms
 
-historic_alarms |>
+```{r age_alarms_heatmap}
+#| results: asis
+
+# historic_alarms |>
+#   filter(week_date >= period_date,
+#          unit %in% age_names) |> 
+#   mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |> 
+#   ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
+#   geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+#   facet_wrap(~organism) +
+#   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+#   labs(x = "ISO Week",
+#        y = "Health Board",
+#        fill = "Alarm")
+
+heat_list <- historic_alarms |>
   filter(week_date >= period_date,
          unit %in% age_names) |> 
-  mutate(unit = factor(unit, levels = rev(sort(unique(unit))))) |> 
-  ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
-  geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
-  facet_wrap(~organism) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
-  labs(x = "ISO Week",
-       y = "Health Board",
-       fill = "Alarm")
-  
+  mutate(unit = factor(unit, levels = age_names)) |> 
+  split(~organism)
+
+tabs <- tibble::tibble(
+  organism = names(heat_list),
+  plots = heat_list |> 
+    map(\(x){
+      x |> 
+        ggplot(aes(x = factor(week_date), y = unit, fill = alarm)) +
+        geom_tile(colour = "grey50", linewidth = 0.5, lineend = "round") +
+        theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+        labs(x = "ISO Week",
+             y = "Age group",
+             fill = "Alarm")
+    })
+)
+
+# Render tabset
+quartabs::render_tabset(
+  data = tabs,
+  tabset_vars = "organism",
+  output_vars = "plots",
+  pills = TRUE
+)
+
 ```
 
 ### Under 1
@@ -804,7 +879,6 @@ quartabs::render_tabset(
   pills = TRUE
 )
 ```
-
 
 ## Weekly alarms by pathogen
 
