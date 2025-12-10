@@ -91,6 +91,50 @@ agegp_sts <- function(pathogen, data){
 
 }
 
+#' Create `sts` object with heath board regions as units and population matrix
+#'
+#' @param pathogen Character string of pathogen name
+#' @param data Aggregated `data.frame` of weekly counts by health board
+#'
+#' @return `sts` object with heath board regions as units and population matrix
+#' @export
+#'
+#' @examples
+
+age_sts <- function(pathogen, data){
+
+  # filter the chosen disease
+  pathogen_data <- data |>
+    filter(organism == pathogen)
+
+  # Create matrix of counts by hb
+  count_matrix <- pathogen_data |>
+    select(report_age_band, count, week_date) |>
+    pivot_wider(id_cols = week_date, names_from = report_age_band, values_from = count) |>
+    select(!week_date) |>
+    as.matrix()
+
+  # Create matrix of population by hb for each week
+  pop_matrix <- pathogen_data |>
+    filter(organism == pathogen) |>
+    select(year, iso_week, report_age_band, pop) |>
+    pivot_wider(names_from = report_age_band, values_from = pop) |>
+    select(!c(year, iso_week)) |>
+    as.matrix()
+
+
+  # create the sts object
+  disease_sts <- surveillance::sts(observed = count_matrix, # weekly number of cases
+                                   start = c(min(pathogen_data$year), 01), # first week of the time series
+                                   frequency = 52, # weekly data
+                                   epochAsDate = TRUE, # we do have dates, not only index
+                                   epoch = as.numeric(unique(pathogen_data$week_date)), # here are the dates
+                                   population = pop_matrix
+  )
+
+  return(disease_sts)
+
+}
 
 
 
@@ -241,4 +285,95 @@ gg_outbreak_facet <- function(tidy_output, plot_name = NULL){
 
 
 
+#' Create formatted tooltip labels from model outputs
+#'
+#' @param week_date
+#' @param observed
+#' @param expected
+#' @param upperbound
+#' @param alarm_text
+#'
+#' @returns CSS code with formatted label
+#' @export
+#'
+#' @examples
+#'
 
+make_nice_label <- function(week_date, observed, expected, upperbound, alarm_text) {
+  wk_label <- htmltools::span(
+    glue('Week {lubridate::isoweek(week_date)}:'),
+    style = htmltools::css(
+      font_weight = 600,
+      font_size = '20px'
+    )
+  )
+  count_label <- htmltools::span(
+    glue('Count: {observed}'),
+    style = htmltools::css(
+      font_size = '16px'
+    )
+  )
+  expected_label <- htmltools::span(
+    glue('Expected Count: {expected}'),
+    style = htmltools::css(
+      font_size = '16px'
+    )
+  )
+  threshold_label <- htmltools::span(
+    glue('Alarm Threshold: {upperbound}'),
+    style = htmltools::css(
+      font_size = '16px'
+    )
+  )
+  alarm_label <- htmltools::span(
+    glue('Alarm raised: {alarm_text}'),
+    style = htmltools::css(
+      font_size = '16px'
+    )
+  )
+  glue::glue('{wk_label}<br>{count_label}<br>{expected_label}<br>{threshold_label}<br>{alarm_label}')
+}
+
+
+# Plotting function
+
+ggiraph_outbreak <- function(group = "overall", tidy_output){
+
+  plot_data <- tidy_output |>
+    filter(unit == group)
+
+  alarm_weeks <- plot_data |>
+    filter(alarm == TRUE)
+
+  # Apply function to format labels
+  plot_data_formatted <- plot_data |>
+    mutate(
+      alarm_text = case_when(alarm == FALSE ~ "No",
+                             TRUE ~ "Yes 🚩"),
+      nice_label = pmap_chr(
+        list(
+          week_date,
+          observed,
+          expected,
+          upperbound,
+          alarm_text
+        ),
+        make_nice_label
+      )
+    )
+
+  plot <- plot_data_formatted  |>
+    ggplot(aes(x = week_date)) +
+    geom_col_interactive(aes(y = observed, tooltip = nice_label, data_id = observed)) +
+    geom_line(aes(y = upperbound, colour = "Alarm Threshold"), linetype = "dashed") +
+    geom_line(aes(y = expected, colour = "Expected Count"), linetype = "dashed") +
+    scale_color_manual(values = c("Alarm Threshold" = "#F8766D", "Expected Count" = "#00BA38", "Alarm Raised" = "#F8766D")) +
+    geom_point(data = alarm_weeks, aes(x = week_date, y = 0, colour = "Alarm Raised"), size = 2) +
+    scale_x_date(date_breaks = "month", date_labels = "%Y-%V") +
+    labs(x = "ISO Week",
+         y = "No. Positive Samples",
+         caption  = "Source: ECOSS") +
+    theme(legend.position = "bottom", # Corrected legend position
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1))
+}
