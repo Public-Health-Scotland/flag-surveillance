@@ -11,16 +11,14 @@
 #' include data from the last two seasons (excludes all data pre-covid).
 
 
-
-# Load Data ---------------------------------------------------------------
-
-hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
-
-
 # Packages ----------------------------------------------------------------
 
 pacman::p_load(tidyverse, lubridate, ISOweek, surveillance, purrr, janitor,
                glue, gt, grates)
+
+# Load Data ---------------------------------------------------------------
+
+hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
 
 
 # Set parameters ----------------------------------------------------------
