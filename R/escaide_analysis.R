@@ -14,8 +14,13 @@
 
 # Load Data ---------------------------------------------------------------
 
+source("/PHI_conf/Respiratory_Surveillance_General/Matthew_Hoyle/get_ecoss_data.R")
+
 hb_names <- arrow::read_parquet(here::here("data/hb_names.parquet"))
 
+# Load functions ----------------------------------------------------------
+
+source(here::here("R/functions.R"))
 
 # Packages ----------------------------------------------------------------
 
@@ -25,7 +30,10 @@ pacman::p_load(tidyverse, lubridate, ISOweek, surveillance, purrr, janitor,
 
 # Set parameters ----------------------------------------------------------
 
-start_year <- 2022
+start_year <- 2016
+
+pathogens <- c("Influenza (A or B)", "RSV") |>
+  purrr::set_names()
 
 # Set Theme
 old <- theme_set(theme_bw())
@@ -35,14 +43,16 @@ old <- theme_set(theme_bw())
 
 hb_data <- Aggregate_HB |>
   clean_names() |>
-  filter(str_detect(organism, "Influenza")) |>
+  #filter(str_detect(organism, "Influenza|RSV")) |>
+  filter(organism %in% pathogens) |>
   rename(iso_week = is_oweek) |>
   mutate(week_date = as_date(grates::isoweek(year = year, week = iso_week))) |>
   arrange(week_date)
 
 age_data <- Aggregate_AgeGp |>
   clean_names() |>
-  filter(str_detect(organism, "Influenza")) |>
+  #filter(str_detect(organism, "Influenza")) |>
+  filter(organism %in% pathogens) |>
   rename(iso_week = is_oweek) |>
   mutate(week_date = as_date(grates::isoweek(year = year, week = iso_week))) |>
   arrange(week_date)
@@ -51,8 +61,7 @@ age_data <- Aggregate_AgeGp |>
 # Create sts object ------------------------------------------------------
 
 # Vector of pathogen names
-pathogens <- unique(hb_data$organism) |>
-  purrr::set_names()
+# pathogens <- unique(hb_data$organism)
 
 # Create list of sts objects for each pathogen
 sts_list <- map(pathogens, hb_sts, data = hb_data)
@@ -123,12 +132,86 @@ output_scot <- map(scot_pc.noufaily, tidy_outputs)
 
 gg_outbreak(tidy_output = output_scot$`Influenza (A or B)`)
 
-output_scot$`Influenza (A or B)` |>
-  mutate(season = threshtools::find_flu_season(week_date),
-         week = lubridate::isoweek(week_date)) |>
-  group_by(season) |>
-  filter(alarm == TRUE) |>
-  arrange(week_date) |>
-  slice_head()
+gg_outbreak(tidy_output = output_scot$RSV)
 
+osd_start_week <- output_scot |>
+  map(\(x){
+    x |>
+      mutate(season = threshtools::find_flu_season(week_date),
+             week = lubridate::isoweek(week_date)) |>
+      group_by(season) |>
+      filter(alarm == TRUE) |>
+      arrange(week_date) |>
+      slice_head()
+  }) |>
+  bind_rows(.id = "organism")
+
+osd_start_week |>
+  filter(organism == "Influenza (A or B)")
+
+# Calculate epidemic threshold using MEM ----------------------------------
+
+seasons = list(
+  "2025/2026" = c("2017/2018", "2018/2019", "2022/2023", "2023/2024", "2024/2025"),
+  "2024/2025" = c("2016/2017", "2017/2018", "2018/2019", "2022/2023", "2023/2024"),
+  "2023/2024" = c("2015/2016", "2016/2017", "2017/2018", "2018/2019", "2022/2023"),
+  "2022/2023" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
+  "2021/2022" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
+  "2018/2019" = c("2013/2014", "2014/2015", "2015/2016", "2016/2017", "2017/2018"),
+  "2017/2018" = c("2011/2012", "2013/2014", "2014/2015", "2015/2016", "2016/2017"),
+  "2016/2017" = c("2010/2011", "2011/2012", "2013/2014", "2014/2015", "2015/2016")
+)
+
+
+scot_data <- Aggregate_Scot |>
+  clean_names() |>
+  #filter(str_detect(organism, "Influenza")) |>
+  filter(organism %in% pathogens) |>
+  rename(iso_week = is_oweek) |>
+  mutate(week_date = as_date(grates::isoweek(year = year, week = iso_week))) |>
+  arrange(week_date)
+
+mem_data <- scot_data |>
+  split(~organism) |>
+  map(\(x){
+    seasons |>
+      map(\(y){
+        x |>
+          threshtools::data_to_mem(seasons = y) |>
+          mem::memmodel() |>
+          threshtools::tidy_mem()
+      }) |>
+      bind_rows(.id = "flu_season")
+  }) |>
+  bind_rows(.id = "organism")
+
+mem_start_week <- scot_data |>
+  left_join(
+    mem_data |>
+      select(organism, flu_season, low_threshold),
+    join_by(organism, flu_season)
+  ) |>
+  group_by(organism, flu_season) |>
+  filter(rate >= low_threshold) |>
+  arrange(week_date) |>
+  slice_head() |>
+  rename(week = iso_week)
+
+mem_start_week |>
+  filter(organism == "Influenza (A or B)")
+
+
+# Compare OSD to MEM ------------------------------------------------------
+
+osd_start_week |>
+    select(organism, season, week, week_date) |>
+  left_join(
+    mem_start_week |>
+      select(organism, flu_season, week, week_date),
+    join_by(organism, season == flu_season),
+    suffix = c(".osd", ".mem")
+  ) |>
+  mutate(week_diff = interval(week_date.osd, week_date.mem) / weeks(1)) |>
+  select(!starts_with("week_date")) |>
+  split(~organism)
 
