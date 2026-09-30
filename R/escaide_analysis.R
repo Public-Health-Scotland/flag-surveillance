@@ -112,7 +112,7 @@ gg_outbreak(tidy_output = output_scot$`Influenza (A or B)`)
 
 gg_outbreak(tidy_output = output_scot$RSV)
 
-osd_start_week <- output_scot |>
+oda_start_week <- output_scot |>
   imap(\(x, idx){
     x |>
       mutate(season = case_when(idx == "RSV" ~ threshtools::find_flu_season(week_date, start_week = rsv_season_start_wk),
@@ -125,7 +125,7 @@ osd_start_week <- output_scot |>
   }) |>
   bind_rows(.id = "organism")
 
-osd_start_week |>
+oda_start_week |>
   filter(organism == "Influenza (A or B)")
 
 # Calculate epidemic threshold using MEM ----------------------------------
@@ -135,10 +135,10 @@ seasons = list(
   "2024/2025" = c("2016/2017", "2017/2018", "2018/2019", "2022/2023", "2023/2024"),
   "2023/2024" = c("2015/2016", "2016/2017", "2017/2018", "2018/2019", "2022/2023"),
   "2022/2023" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
-  "2021/2022" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
+  #"2021/2022" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
+  "2019/2020" = c("2014/2015", "2015/2016", "2016/2017", "2017/2018", "2018/2019"),
   "2018/2019" = c("2013/2014", "2014/2015", "2015/2016", "2016/2017", "2017/2018"),
-  "2017/2018" = c("2011/2012", "2013/2014",
-    "2014/2015", "2015/2016", "2016/2017"),
+  "2017/2018" = c("2011/2012", "2013/2014", "2014/2015", "2015/2016", "2016/2017"),
   "2016/2017" = c("2010/2011", "2011/2012", "2013/2014", "2014/2015", "2015/2016")
 )
 
@@ -172,17 +172,17 @@ mem_start_week |>
   filter(organism == "Influenza (A or B)")
 
 
-# Compare OSD to MEM ------------------------------------------------------
+# Compare ODA to MEM ------------------------------------------------------
 
 comparison_tbl <- mem_start_week |>
   select(organism, season, week, week_date) |>
   left_join(
-    osd_start_week |>
+    oda_start_week |>
     select(organism, season, week, week_date),
     join_by(organism, season),
-    suffix = c(".mem", ".osd")
+    suffix = c(".mem", ".oda")
   ) |>
-  mutate(week_diff = interval(week_date.osd, week_date.mem) / weeks(1))
+  mutate(week_diff = interval(week_date.oda, week_date.mem) / weeks(1))
 
 comparison_tbl |>
   select(!starts_with("week_date")) |>
@@ -287,7 +287,7 @@ gg_escaide_outbreak <- function(group = "overall", tidy_output){
   return(plot)
 }
 
-osd_plot <- gg_escaide_outbreak(
+oda_plot <- gg_escaide_outbreak(
   tidy_output = plot_data$`Influenza (A or B)` |>
     filter(week_date >= plot_dates$start,
            week_date <= plot_dates$end)
@@ -330,7 +330,7 @@ mem_plot <- mem_plot_data |>
         axis.title.y = element_text(angle = 0, vjust = 0.5))
 
 
-poster_plot <- mem_plot / osd_plot +
+poster_plot <- mem_plot / oda_plot +
   plot_layout(axis_titles = "collect_x")
 
 poster_plot
@@ -341,12 +341,12 @@ poster_plot
 poster_tbl <- comparison_tbl |>
   ungroup() |>
   filter(organism == "Influenza (A or B)") |>
-  select(season, week.mem, week.osd, week_diff) |>
+  select(season, week.mem, week.oda, week_diff) |>
   gt() |>
   cols_label(
     season = md("**Season**"),
     week.mem = md("***MEM***"),
-    week.osd = md("***OSD***"),
+    week.oda = md("***ODA***"),
     week_diff = md("**Time difference (weeks)**")
   ) |>
   tab_spanner(label = md("**First exceedance week**"), columns = starts_with("week."))
