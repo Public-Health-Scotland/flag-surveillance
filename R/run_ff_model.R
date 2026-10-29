@@ -25,7 +25,7 @@ pacman::p_load(tidyverse, lubridate, ISOweek, surveillance, purrr, janitor,
 
 # Set parameters ----------------------------------------------------------
 
-start_year <- 2024
+start_year <- 2025
 
 # Set Theme
 old <- theme_set(theme_bw())
@@ -85,7 +85,7 @@ seapoch_list <- map(sts_list, season_epoch)
 con.noufaily <- list(range = seapoch_list[[1]], noPeriods = 10,
                      reweight = TRUE,
                      trend = TRUE,
-                     populationOffset = TRUE,
+                     populationOffset = FALSE,
                      powertrans = "2/3",
                      fitFun = "algo.farrington.fitGLM.flexible",
                      b = 2, w = 3,
