@@ -63,4 +63,4 @@ save.image(here::here("data/model_data.rds"), compress = TRUE)
 
 quarto::quarto_render()
 
-browseURL(here::here("report/est_weekly_report.html"))
+browseURL("report/est_weekly_report.html")
